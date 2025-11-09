@@ -1,0 +1,14 @@
+# Compiled class files
+*.class
+
+# IDE files (IntelliJ, Eclipse, VSCode)
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+
+# Build output folders
+out/
+bin/
+build/
