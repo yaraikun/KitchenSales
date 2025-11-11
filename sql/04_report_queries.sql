@@ -49,7 +49,18 @@ ORDER BY total_revenue DESC;
 -- =================================================================
 -- Report: Kitchen Efficiency Report
 -- =================================================================
--- Add query here.
+SELECT 
+    DATE(created_time) AS order_date,
+    COUNT(*) AS total_orders,
+    AVG(TIMESTAMPDIFF(MINUTE, created_time, completed_time)) AS avg_prep_time_minutes
+FROM pos_kitchen_orders
+WHERE 
+    completed_time IS NOT NULL AND
+    YEAR(created_time) = ? AND
+    MONTH(created_time) = ?
+GROUP BY order_date
+ORDER BY order_date;
+
 
 
 -- --- End of Script ---
