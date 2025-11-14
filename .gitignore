@@ -12,3 +12,6 @@
 out/
 bin/
 build/
+
+# Mac 
+.DS_Store
