@@ -19,6 +19,11 @@ public class App {
                 stmt.execute(sql.getSQL());
                 System.out.println("Successfully executed " + sql.name() + "!");
             }
+            for (InsertInitialDataSQLCodes sql : InsertInitialDataSQLCodes.values()) {
+                stmt.execute(sql.getSQL());
+                System.out.println("Successfully executed " + sql.name() + "!");
+            }
+
             System.out.println("The tables have been created!");
         } catch (SQLException f) {
             throw new RuntimeException(f);
