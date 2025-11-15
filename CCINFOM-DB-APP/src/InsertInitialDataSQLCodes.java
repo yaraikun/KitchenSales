@@ -1,5 +1,5 @@
 public enum InsertInitialDataSQLCodes {
-    createUsers("""
+    insertUsers("""
         INSERT INTO users (username, password, type)
             VALUES
                 ('admin', 'admin123!@#', 'ADM'),

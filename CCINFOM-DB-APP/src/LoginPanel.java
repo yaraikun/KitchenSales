@@ -1,5 +1,4 @@
-import javax.swing.JButton;
-import javax.swing.JTextField;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
@@ -20,6 +19,7 @@ public class LoginPanel extends BackgroundPanel {
                     System.out.println("User type: " + type);
                     return type;
                 } else {
+                    JOptionPane.showMessageDialog(null, "User does not exist, wrong password/username!");
                     System.out.println("Invalid login.");
                     return null;
                 }
@@ -42,7 +42,7 @@ public class LoginPanel extends BackgroundPanel {
         add(usernameField);
         add(passwordField);
 
-        JButton loginButton = new JButton();
+        JButton loginButton = theme.createButton();
         loginButton.addActionListener(e -> {
             String type = checkLogin(usernameField.getText(), passwordField.getText());
             if (type != null) {
@@ -56,7 +56,7 @@ public class LoginPanel extends BackgroundPanel {
                         PanelManager.updateCurrentPanel(reportsPanel);
                         break;
                     case "ADM":
-                        AdminPanel adminPanel = new AdminPanel();
+                        AdminPanel adminPanel = new AdminPanel(theme);
                         PanelManager.updateCurrentPanel(adminPanel);
                         break;
                 }
@@ -69,7 +69,6 @@ public class LoginPanel extends BackgroundPanel {
         loginButton.setOpaque(false);
         loginButton.setContentAreaFilled(false);
         loginButton.setBorderPainted(false);
-        loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         add(loginButton);
     }
 }

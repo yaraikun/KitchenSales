@@ -1,6 +1,4 @@
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class App {
     public static final String schemaName = "korean_bbq_pos";
@@ -19,9 +17,23 @@ public class App {
                 stmt.execute(sql.getSQL());
                 System.out.println("Successfully executed " + sql.name() + "!");
             }
-            for (InsertInitialDataSQLCodes sql : InsertInitialDataSQLCodes.values()) {
-                stmt.execute(sql.getSQL());
-                System.out.println("Successfully executed " + sql.name() + "!");
+
+            System.out.println("Inserting data...");
+            String query = "SELECT COUNT(*) FROM users";
+            try (PreparedStatement stmt2 = connection.prepareStatement(query);
+                 ResultSet rs = stmt2.executeQuery()) {
+
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    if (count == 0) {
+                        for (InsertInitialDataSQLCodes sql : InsertInitialDataSQLCodes.values()) {
+                            stmt.execute(sql.getSQL());
+                            System.out.println("Successfully inserted " + sql.name() + " data!");
+                        }
+                    } else {
+                        System.out.println("Table has data.");
+                    }
+                }
             }
 
             System.out.println("The tables have been created!");

@@ -62,13 +62,12 @@ public enum Theme {
         return frame;
     }
 
-    public JButton createButton(String text) {
-        JButton button = new JButton(text);
-        button.setBackground(buttonBackground);
-        button.setForeground(buttonFontColor);
-        button.setFont(fontStyle);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createLineBorder(labelBackground, 2));
+    public JButton createButton() {
+        JButton button = new JButton();
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return button;
     }
 
@@ -82,8 +81,8 @@ public enum Theme {
 
     public JTextField createTextField() {
         JTextField textField = new JTextField();
-        textField.setOpaque(false);
-        textField.setBorder(null);
+        //textField.setOpaque(false);
+        //textField.setBorder(null);
         textField.setForeground(labelFontColor);
         textField.setFont(fontStyle);
         textField.setCaretColor(labelFontColor);
