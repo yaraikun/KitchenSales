@@ -12,6 +12,7 @@ public class App {
             System.out.println("Successfully created " + schemaName + " or it already exists!");
             stmt.execute("USE " + schemaName);
             System.out.println("Successfully using " + schemaName + "!");
+            //
 
             System.out.println("Creating tables...");
             for (TableCreationSQLCodes sql : TableCreationSQLCodes.values()) {
