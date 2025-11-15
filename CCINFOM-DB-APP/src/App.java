@@ -1,7 +1,6 @@
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import javax.swing.JFrame;
 
 public class App {
     public static final String schemaName = "korean_bbq_pos";
