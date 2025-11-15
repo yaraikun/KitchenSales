@@ -19,7 +19,7 @@ public class CashierPanel extends BackgroundPanel {
     }
 
     public CashierPanel() {
-        super("assets/cashierPanel.png");
+        super("CCINFOM-DB-APP/assets/cashierPanel.png");
         setLayout(null);
 
         JButton kitchenButton = new JButton();

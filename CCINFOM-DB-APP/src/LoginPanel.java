@@ -31,7 +31,7 @@ public class LoginPanel extends BackgroundPanel {
     }
 
     public LoginPanel(Theme theme) {
-        super("assets/loginPanel.png");
+        super("CCINFOM-DB-APP/assets/loginPanel.png");
         setLayout(null);
         setBackground(theme.getBackgroundColor());
 
