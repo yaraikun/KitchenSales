@@ -27,7 +27,7 @@ GROUP BY ptl.item_name
 ORDER BY total_revenue DESC;
 
 -- =================================================================
--- Report: Discount Utilization Report (ADDED)
+-- Report: Discount Utilization Report
 -- =================================================================
 SELECT
     d.discount_name,
@@ -40,7 +40,7 @@ GROUP BY d.discount_name
 ORDER BY times_used DESC;
 
 -- =================================================================
--- Report: Payment Method Report (ADDED)
+-- Report: Payment Method Report
 -- =================================================================
 SELECT
     payment_method,
