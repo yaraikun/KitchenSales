@@ -38,16 +38,19 @@ CREATE TABLE IF NOT EXISTS discounts (
 CREATE TABLE IF NOT EXISTS pos_transactions (
     transaction_id INT PRIMARY KEY AUTO_INCREMENT,
     transaction_date DATETIME NOT NULL,
-    terminal_id INT,
-    discount_id INT NULL,
+    terminal_id INT NOT NULL,
+    staff_id INT NOT NULL,
     total_amount DECIMAL(10, 2) NOT NULL,
+    discount_id INT,
     discount_amount DECIMAL(10, 2) DEFAULT 0.00,
     tax_amount DECIMAL(10, 2) NOT NULL,
     net_amount DECIMAL(10, 2) NOT NULL,
     status VARCHAR(50) NOT NULL,
     payment_status VARCHAR(50) NOT NULL,
+
     FOREIGN KEY (terminal_id) REFERENCES pos_terminals(terminal_id),
-    FOREIGN KEY (discount_id) REFERENCES discounts(discount_id)
+    FOREIGN KEY (discount_id) REFERENCES discounts(discount_id),
+    FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
 );
 
 -- =================================================================

@@ -18,8 +18,8 @@ SELECT discount_id, discount_name, type, value FROM discounts WHERE status = 'Ac
 -- =================================================================
 -- Transaction: Creating a POS Transaction & Kitchen Route
 -- a. Create the POS Transaction header
-INSERT INTO pos_transactions (transaction_date, terminal_id, total_amount, discount_amount, tax_amount, net_amount, status, payment_status)
-VALUES (NOW(), ?, ?, ?, ?, ?, 'Active', 'Unpaid');
+INSERT INTO pos_transactions (transaction_date, terminal_id, staff_id, total_amount, discount_amount, tax_amount, net_amount, status, payment_status)
+VALUES (NOW(), ?, ?, ?, ?, ?, ?, 'Active', 'Unpaid');
 
 -- b. Create the POS Kitchen Order
 INSERT INTO pos_kitchen_orders (transaction_id, status, created_time)
