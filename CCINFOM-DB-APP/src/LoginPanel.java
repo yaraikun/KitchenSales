@@ -52,7 +52,7 @@ public class LoginPanel extends BackgroundPanel {
                         PanelManager.updateCurrentPanel(cashierPanel);
                         break;
                     case "MAN":
-                        ReportsPanel reportsPanel = new ReportsPanel();
+                        ReportsPanel reportsPanel = new ReportsPanel(usernameField.getText());
                         PanelManager.updateCurrentPanel(reportsPanel);
                         break;
                     case "ADM":
