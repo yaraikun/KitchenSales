@@ -13,9 +13,11 @@ import java.time.format.DateTimeParseException;
  *  - Sales Performance (product performance)
  */
 public class ReportsPanel extends BackgroundPanel {
+
     private JTable reportTable;
     private DefaultTableModel reportTableModel;
     private JScrollPane reportScrollPane;
+
     private JLabel fromLabel;
     private JLabel toLabel;
     private JTextField fromDateField;
@@ -33,8 +35,16 @@ public class ReportsPanel extends BackgroundPanel {
 
     private ReportType currentReportType = ReportType.NONE;
 
+    // =============================
+    // Constructor
+    // =============================
+
+    /**
+     * Creates the ReportsPanel for a specific manager username.
+     */
     public ReportsPanel(String managerUsername) {
-        super("CCINFOM-DB-APP/assets/reportsPanel.png");
+        // Use the cashier background image for now
+        super("assets/cashierPanel.png");
         // Absolute layout to match the rest of the app
         setLayout(null);
 
