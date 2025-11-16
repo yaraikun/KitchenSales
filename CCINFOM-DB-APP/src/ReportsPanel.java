@@ -1,51 +1,38 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
-/**
- * Manager Reports screen.
- * Reuses one date filter + table area for multiple reports:
- *  - Sales Summary
- *  - Sales Performance (product performance)
- */
+
 public class ReportsPanel extends BackgroundPanel {
 
     private JTable reportTable;
     private DefaultTableModel reportTableModel;
     private JScrollPane reportScrollPane;
 
-    private JLabel fromLabel;
-    private JLabel toLabel;
     private JTextField fromDateField;
     private JTextField toDateField;
     private JButton runReportButton;
 
     private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00");
 
-    // which report is currently selected (controls what the "Run" button does)
     private enum ReportType {
         NONE,
         SALES_SUMMARY,
-        SALES_PERFORMANCE
+        SALES_PERFORMANCE,
+        DISCOUNT_UTILIZATION,
+        PAYMENT_BREAKDOWN,
+        KITCHEN_EFFICIENCY
     }
 
     private ReportType currentReportType = ReportType.NONE;
 
-    // =============================
-    // Constructor
-    // =============================
-
-    /**
-     * Creates the ReportsPanel for a specific manager username.
-     */
     public ReportsPanel(String managerUsername) {
-        // Use the cashier background image for now
-        super("assets/cashierPanel.png");
-        // Absolute layout to match the rest of the app
+        super("CCINFOM-DB-APP/assets/reportsPanel.png");
         setLayout(null);
 
         Theme theme = Theme.MONOCHROME;
@@ -57,20 +44,17 @@ public class ReportsPanel extends BackgroundPanel {
         System.out.println("ReportsPanel initialized with report buttons.");
     }
 
-
-    // ============================================
-    //  Header (manager name and logout button).
-    // ============================================
     private void initHeader(Theme theme, String managerUsername) {
-        JLabel managerLabel = theme.createLabel("Manager: " + managerUsername);
-        managerLabel.setBounds(750, 10, 250, 25);
+        JLabel managerLabel = new JLabel( managerUsername);
+        managerLabel.setBounds(160, 4, 350, 30);
+        managerLabel.setForeground(Color.BLACK);
+        managerLabel.setFont(new Font("Arial", Font.BOLD, 20));
         add(managerLabel);
 
+
+
         JButton logoutButton = theme.createButton();
-        logoutButton.setText("Logout");
-        logoutButton.setBorderPainted(true);
-        logoutButton.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
-        logoutButton.setBounds(1020, 8, 120, 30);
+        logoutButton.setBounds(100, 565, 140, 42);
         logoutButton.addActionListener(_ -> {
             LoginPanel loginPanel = new LoginPanel(theme);
             PanelManager.updateCurrentPanel(loginPanel);
@@ -78,21 +62,12 @@ public class ReportsPanel extends BackgroundPanel {
         add(logoutButton);
     }
 
-    // ===========================
-    //  report buttons (temporary)
-    // ===========================
     private void initReportButtons(Theme theme) {
         JButton salesSummaryButton = theme.createButton();
         JButton salesPerformanceButton = theme.createButton();
         JButton discountUtilizationButton = theme.createButton();
         JButton paymentMethodButton = theme.createButton();
         JButton kitchenEfficiencyButton = theme.createButton();
-
-        salesSummaryButton.setText("Sales Summary");
-        salesPerformanceButton.setText("Sales Performance");
-        discountUtilizationButton.setText("Discount Utilization");
-        paymentMethodButton.setText("Payment Method Breakdown");
-        kitchenEfficiencyButton.setText("Kitchen Efficiency");
 
         JButton[] reportButtons = {
                 salesSummaryButton,
@@ -102,20 +77,11 @@ public class ReportsPanel extends BackgroundPanel {
                 kitchenEfficiencyButton
         };
 
-        // styled the transparent buttons with borders (temporarily)
-        for (JButton btn : reportButtons) {
-            btn.setBorderPainted(true);
-            btn.setContentAreaFilled(false);
-            btn.setOpaque(false);
-            btn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
-            btn.setHorizontalAlignment(SwingConstants.CENTER);
-        }
-
-        int x = 40;
-        int y = 80;
-        int width = 260;
-        int height = 50;
-        int gap = 20;
+        int x = 38;
+        int y = 102;
+        int width = 250;
+        int height = 58;
+        int gap = 34;
 
         salesSummaryButton.setBounds(x, y, width, height);
         salesPerformanceButton.setBounds(x, y + (height + gap), width, height);
@@ -123,14 +89,10 @@ public class ReportsPanel extends BackgroundPanel {
         paymentMethodButton.setBounds(x, y + 3 * (height + gap), width, height);
         kitchenEfficiencyButton.setBounds(x, y + 4 * (height + gap), width, height);
 
-        add(salesSummaryButton);
-        add(salesPerformanceButton);
-        add(discountUtilizationButton);
-        add(paymentMethodButton);
-        add(kitchenEfficiencyButton);
+        for (JButton btn : reportButtons) {
+            add(btn);
+        }
 
-
-        // Sales Summary button
         salesSummaryButton.addActionListener(_ -> {
             currentReportType = ReportType.SALES_SUMMARY;
             setDateControlsAndTableVisible(true);
@@ -138,7 +100,6 @@ public class ReportsPanel extends BackgroundPanel {
             setupSalesSummaryTable();
         });
 
-        // Sales Performance button
         salesPerformanceButton.addActionListener(_ -> {
             currentReportType = ReportType.SALES_PERFORMANCE;
             setDateControlsAndTableVisible(true);
@@ -146,43 +107,48 @@ public class ReportsPanel extends BackgroundPanel {
             setupSalesPerformanceTable();
         });
 
+        discountUtilizationButton.addActionListener(_ -> {
+            currentReportType = ReportType.DISCOUNT_UTILIZATION;
+            setDateControlsAndTableVisible(true);
+            setDefaultDateRange();
+            setupDiscountUtilizationTable();
+        });
 
-        // Discount Utilization button
+        paymentMethodButton.addActionListener(_ -> {
+            currentReportType = ReportType.PAYMENT_BREAKDOWN;
+            setDateControlsAndTableVisible(true);
+            setDefaultDateRange();
+            setupPaymentBreakdownTable();
+        });
 
-        // Payment method button
-
-        // Kitchen efficiency button
-
+        kitchenEfficiencyButton.addActionListener(_ -> {
+            currentReportType = ReportType.KITCHEN_EFFICIENCY;
+            setDateControlsAndTableVisible(true);
+            setDefaultDateRange();
+            setupKitchenEfficiencyTable();
+        });
     }
 
-    // =====================================
-    // Shared date controls (From/To + Run)
-    // =====================================
     private void initSharedDateControls(Theme theme) {
-        int filterY = 55;      // y-position for the filters (second row)
-        int filterHeight = 25; // height for all filter controls
-
-        fromLabel = theme.createLabel("From (yyyy-MM-dd):");
-        fromLabel.setBounds(340, filterY, 180, filterHeight);
-        add(fromLabel);
+        int filterY = 55;
+        int filterHeight = 30;
 
         fromDateField = theme.createTextField();
-        fromDateField.setBounds(520, filterY, 120, filterHeight);
+        fromDateField.setBounds(570, filterY + 2, 90, filterHeight);
+        fromDateField.setOpaque(true);
+        fromDateField.setBackground(theme.getButtonBackground());
+        fromDateField.setBorder(BorderFactory.createLineBorder(theme.getLabelBackground(), 2));
         add(fromDateField);
 
-        toLabel = theme.createLabel("To (yyyy-MM-dd):");
-        toLabel.setBounds(660, filterY, 180, filterHeight);
-        add(toLabel);
-
         toDateField = theme.createTextField();
-        toDateField.setBounds(830, filterY, 120, filterHeight);
+        toDateField.setBounds(915, filterY + 2, 90, filterHeight);
+        toDateField.setOpaque(true);
+        toDateField.setBackground(theme.getButtonBackground());
+        toDateField.setBorder(BorderFactory.createLineBorder(theme.getLabelBackground(), 2));
         add(toDateField);
 
         runReportButton = theme.createButton();
-        runReportButton.setText("Run");
-        runReportButton.setBorderPainted(true);
-        runReportButton.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
-        runReportButton.setBounds(970, filterY, 80, filterHeight);
+        runReportButton.setBounds(1055, filterY, 85, filterHeight);
         add(runReportButton);
 
         runReportButton.addActionListener(_ -> runCurrentReport());
@@ -190,12 +156,9 @@ public class ReportsPanel extends BackgroundPanel {
         setDateControlsAndTableVisible(false);
     }
 
-    //temporarily hides the filter controls and table until a report is chosen by the manager
     private void setDateControlsAndTableVisible(boolean visible) {
-        if (fromLabel != null)      fromLabel.setVisible(visible);
-        if (fromDateField != null)  fromDateField.setVisible(visible);
-        if (toLabel != null)        toLabel.setVisible(visible);
-        if (toDateField != null)    toDateField.setVisible(visible);
+        if (fromDateField != null) fromDateField.setVisible(visible);
+        if (toDateField != null) toDateField.setVisible(visible);
         if (runReportButton != null) runReportButton.setVisible(visible);
 
         if (reportScrollPane != null) {
@@ -203,7 +166,6 @@ public class ReportsPanel extends BackgroundPanel {
         }
     }
 
-    //sets the default date range "current today"
     private void setDefaultDateRange() {
         LocalDate today = LocalDate.now();
         LocalDate firstOfMonth = today.withDayOfMonth(1);
@@ -216,11 +178,13 @@ public class ReportsPanel extends BackgroundPanel {
         }
     }
 
-    //runs the current report based on the current report type
     private void runCurrentReport() {
         switch (currentReportType) {
             case SALES_SUMMARY -> runSalesSummaryQuery();
             case SALES_PERFORMANCE -> runSalesPerformanceQuery();
+            case DISCOUNT_UTILIZATION -> runDiscountUtilizationQuery();
+            case PAYMENT_BREAKDOWN -> runPaymentBreakdownQuery();
+            case KITCHEN_EFFICIENCY -> runKitchenEfficiencyQuery();
             case NONE -> JOptionPane.showMessageDialog(
                     this,
                     "Please select a report first.",
@@ -230,18 +194,16 @@ public class ReportsPanel extends BackgroundPanel {
         }
     }
 
-    // =============================
-    //        Sales Summary
-    // =============================
-
     private void setupSalesSummaryTable() {
         String[] columnNames = { "Date", "Total Transactions", "Total Sales" };
 
         if (reportTableModel == null) {
             reportTableModel = new DefaultTableModel(columnNames, 0);
             reportTable = new JTable(reportTableModel);
+            styleReportTable();
             reportScrollPane = new JScrollPane(reportTable);
-            reportScrollPane.setBounds(340, 95, 820, 505);
+            reportScrollPane.setBounds(340, 110, 820, 500);
+            reportScrollPane.setBorder(null);
             add(reportScrollPane);
         } else {
             reportTableModel.setRowCount(0);
@@ -255,18 +217,16 @@ public class ReportsPanel extends BackgroundPanel {
         this.repaint();
     }
 
-    // runs a query from 04_report_queries.sql
     private void runSalesSummaryQuery() {
-        // Parse and validate dates
-        java.sql.Timestamp fromTimestamp;
-        java.sql.Timestamp toTimestamp;
+        Timestamp fromTimestamp;
+        Timestamp toTimestamp;
 
         try {
             LocalDate fromDate = LocalDate.parse(fromDateField.getText().trim());
-            LocalDate toDate   = LocalDate.parse(toDateField.getText().trim());
+            LocalDate toDate = LocalDate.parse(toDateField.getText().trim());
 
             fromTimestamp = Timestamp.valueOf(fromDate.atStartOfDay());
-            toTimestamp   = Timestamp.valueOf(toDate.atTime(23, 59, 59));
+            toTimestamp = Timestamp.valueOf(toDate.atTime(23, 59, 59));
         } catch (DateTimeParseException ex) {
             JOptionPane.showMessageDialog(
                     this,
@@ -289,13 +249,11 @@ public class ReportsPanel extends BackgroundPanel {
                 """;
 
         try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql);
+             Statement useStmt = connection.createStatement()) {
 
-            try (Statement useStmt = connection.createStatement()) {
-                useStmt.execute("USE " + App.schemaName);
-            }
+            useStmt.execute("USE " + App.schemaName);
 
-            // Bind params and execute
             stmt.setTimestamp(1, fromTimestamp);
             stmt.setTimestamp(2, toTimestamp);
 
@@ -308,9 +266,7 @@ public class ReportsPanel extends BackgroundPanel {
                     double totalSales = rs.getDouble("total_sales");
                     String totalSalesFormatted = currencyFormat.format(totalSales);
 
-                    reportTableModel.addRow(
-                            new Object[]{ date, totalTransactions, totalSalesFormatted }
-                    );
+                    reportTableModel.addRow(new Object[]{ date, totalTransactions, totalSalesFormatted });
                 }
 
                 if (reportTableModel.getRowCount() == 0) {
@@ -324,7 +280,6 @@ public class ReportsPanel extends BackgroundPanel {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(
                     this,
                     "Error running Sales Summary report:\n" + e.getMessage(),
@@ -334,18 +289,16 @@ public class ReportsPanel extends BackgroundPanel {
         }
     }
 
-    // =============================
-    //       Sales Performance
-    // =============================
-
     private void setupSalesPerformanceTable() {
         String[] columnNames = { "Item Name", "Total Quantity Sold", "Total Revenue" };
 
         if (reportTableModel == null) {
             reportTableModel = new DefaultTableModel(columnNames, 0);
             reportTable = new JTable(reportTableModel);
+            styleReportTable();
             reportScrollPane = new JScrollPane(reportTable);
-            reportScrollPane.setBounds(340, 95, 820, 505);
+            reportScrollPane.setBounds(340, 110, 820, 500);
+            reportScrollPane.setBorder(null);
             add(reportScrollPane);
         } else {
             reportTableModel.setRowCount(0);
@@ -359,17 +312,16 @@ public class ReportsPanel extends BackgroundPanel {
         this.repaint();
     }
 
-    // runs a query from 04_report_queries.sql
     private void runSalesPerformanceQuery() {
-        java.sql.Timestamp fromTimestamp;
-        java.sql.Timestamp toTimestamp;
+        Timestamp fromTimestamp;
+        Timestamp toTimestamp;
 
         try {
             LocalDate fromDate = LocalDate.parse(fromDateField.getText().trim());
-            LocalDate toDate   = LocalDate.parse(toDateField.getText().trim());
+            LocalDate toDate = LocalDate.parse(toDateField.getText().trim());
 
             fromTimestamp = Timestamp.valueOf(fromDate.atStartOfDay());
-            toTimestamp   = Timestamp.valueOf(toDate.atTime(23, 59, 59));
+            toTimestamp = Timestamp.valueOf(toDate.atTime(23, 59, 59));
         } catch (DateTimeParseException ex) {
             JOptionPane.showMessageDialog(
                     this,
@@ -393,11 +345,10 @@ public class ReportsPanel extends BackgroundPanel {
                 """;
 
         try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql);
+             Statement useStmt = connection.createStatement()) {
 
-            try (Statement useStmt = connection.createStatement()) {
-                useStmt.execute("USE " + App.schemaName);
-            }
+            useStmt.execute("USE " + App.schemaName);
 
             stmt.setTimestamp(1, fromTimestamp);
             stmt.setTimestamp(2, toTimestamp);
@@ -411,9 +362,7 @@ public class ReportsPanel extends BackgroundPanel {
                     double totalRevenue = rs.getDouble("total_revenue");
                     String totalRevenueFormatted = currencyFormat.format(totalRevenue);
 
-                    reportTableModel.addRow(
-                            new Object[]{ itemName, totalQty, totalRevenueFormatted }
-                    );
+                    reportTableModel.addRow(new Object[]{ itemName, totalQty, totalRevenueFormatted });
                 }
 
                 if (reportTableModel.getRowCount() == 0) {
@@ -427,7 +376,6 @@ public class ReportsPanel extends BackgroundPanel {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
             JOptionPane.showMessageDialog(
                     this,
                     "Error running Sales Performance report:\n" + e.getMessage(),
@@ -437,22 +385,313 @@ public class ReportsPanel extends BackgroundPanel {
         }
     }
 
-    // =============================
-    // Misc
-    // =============================
-    private boolean checkLogin(String username, String password, boolean unusedFlag) {
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
+    private void setupDiscountUtilizationTable() {
+        String[] columnNames = { "Discount Name", "Times Used", "Total Discount Value" };
+
+        if (reportTableModel == null) {
+            reportTableModel = new DefaultTableModel(columnNames, 0);
+            reportTable = new JTable(reportTableModel);
+            styleReportTable();
+            reportScrollPane = new JScrollPane(reportTable);
+            reportScrollPane.setBounds(340, 110, 820, 500);
+            reportScrollPane.setBorder(null);
+            add(reportScrollPane);
+        } else {
+            reportTableModel.setRowCount(0);
+            reportTableModel.setColumnIdentifiers(columnNames);
+        }
+
+        reportScrollPane.setVisible(true);
+        reportScrollPane.revalidate();
+        reportScrollPane.repaint();
+        this.revalidate();
+        this.repaint();
+    }
+
+    private void runDiscountUtilizationQuery() {
+        Timestamp fromTimestamp;
+        Timestamp toTimestamp;
+
+        try {
+            LocalDate fromDate = LocalDate.parse(fromDateField.getText().trim());
+            LocalDate toDate = LocalDate.parse(toDateField.getText().trim());
+
+            fromTimestamp = Timestamp.valueOf(fromDate.atStartOfDay());
+            toTimestamp = Timestamp.valueOf(toDate.atTime(23, 59, 59));
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter valid dates in format yyyy-MM-dd.",
+                    "Invalid Date",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        String sql = """
+                SELECT
+                    d.discount_name,
+                    COUNT(t.transaction_id) AS times_used,
+                    SUM(t.discount_amount) AS total_value
+                FROM pos_transactions t
+                JOIN discounts d ON t.discount_id = d.discount_id
+                WHERE t.status = 'Completed' AND t.transaction_date BETWEEN ? AND ?
+                GROUP BY d.discount_name
+                ORDER BY times_used DESC;
+                """;
 
         try (Connection connection = Database.getConnection();
-             Statement stmt1 = connection.createStatement();
-             PreparedStatement stmt2 = connection.prepareStatement(query)) {
+             PreparedStatement stmt = connection.prepareStatement(sql);
+             Statement useStmt = connection.createStatement()) {
 
-            stmt1.execute("USE " + App.schemaName);
-            // Real implementation would verify the ResultSet;
-            // for now we just return true if no exception occurs.
-            return true;
-        } catch (SQLException f) {
-            throw new RuntimeException(f);
+            useStmt.execute("USE " + App.schemaName);
+
+            stmt.setTimestamp(1, fromTimestamp);
+            stmt.setTimestamp(2, toTimestamp);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                reportTableModel.setRowCount(0);
+
+                while (rs.next()) {
+                    String discountName = rs.getString("discount_name");
+                    int timesUsed = rs.getInt("times_used");
+                    double totalValue = rs.getDouble("total_value");
+                    String totalValueFormatted = currencyFormat.format(totalValue);
+
+                    reportTableModel.addRow(new Object[]{ discountName, timesUsed, totalValueFormatted });
+                }
+
+                if (reportTableModel.getRowCount() == 0) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "No discounts used for the selected date range.",
+                            "No Data",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error running Discount Utilization report:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
+    }
+
+    private void setupPaymentBreakdownTable() {
+        String[] columnNames = { "Payment Method", "Number of Transactions", "Total Collected" };
+
+        if (reportTableModel == null) {
+            reportTableModel = new DefaultTableModel(columnNames, 0);
+            reportTable = new JTable(reportTableModel);
+            styleReportTable();
+            reportScrollPane = new JScrollPane(reportTable);
+            reportScrollPane.setBounds(340, 110, 820, 500);
+            reportScrollPane.setBorder(null);
+            add(reportScrollPane);
+        } else {
+            reportTableModel.setRowCount(0);
+            reportTableModel.setColumnIdentifiers(columnNames);
+        }
+
+        reportScrollPane.setVisible(true);
+        reportScrollPane.revalidate();
+        reportScrollPane.repaint();
+        this.revalidate();
+        this.repaint();
+    }
+
+    private void runPaymentBreakdownQuery() {
+        Timestamp fromTimestamp;
+        Timestamp toTimestamp;
+
+        try {
+            LocalDate fromDate = LocalDate.parse(fromDateField.getText().trim());
+            LocalDate toDate = LocalDate.parse(toDateField.getText().trim());
+
+            fromTimestamp = Timestamp.valueOf(fromDate.atStartOfDay());
+            toTimestamp = Timestamp.valueOf(toDate.atTime(23, 59, 59));
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter valid dates in format yyyy-MM-dd.",
+                    "Invalid Date",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        String sql = """
+                SELECT
+                    payment_method,
+                    COUNT(payment_id) AS number_of_transactions,
+                    SUM(amount) AS total_collected
+                FROM payments p
+                JOIN pos_transactions t ON p.transaction_id = t.transaction_id
+                WHERE t.status = 'Completed' AND p.payment_date BETWEEN ? AND ?
+                GROUP BY payment_method
+                ORDER BY total_collected DESC;
+                """;
+
+        try (Connection connection = Database.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql);
+             Statement useStmt = connection.createStatement()) {
+
+            useStmt.execute("USE " + App.schemaName);
+
+            stmt.setTimestamp(1, fromTimestamp);
+            stmt.setTimestamp(2, toTimestamp);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                reportTableModel.setRowCount(0);
+
+                while (rs.next()) {
+                    String paymentMethod = rs.getString("payment_method");
+                    int numberOfTransactions = rs.getInt("number_of_transactions");
+                    double totalCollected = rs.getDouble("total_collected");
+                    String totalCollectedFormatted = currencyFormat.format(totalCollected);
+
+                    reportTableModel.addRow(new Object[]{ paymentMethod, numberOfTransactions, totalCollectedFormatted });
+                }
+
+                if (reportTableModel.getRowCount() == 0) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "No payments found for the selected date range.",
+                            "No Data",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error running Payment Breakdown report:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private void setupKitchenEfficiencyTable() {
+        String[] columnNames = { "Order Date", "Total Orders", "Avg Prep Time (minutes)" };
+
+        if (reportTableModel == null) {
+            reportTableModel = new DefaultTableModel(columnNames, 0);
+            reportTable = new JTable(reportTableModel);
+            styleReportTable();
+            reportScrollPane = new JScrollPane(reportTable);
+            reportScrollPane.setBounds(340, 110, 820, 500);
+            reportScrollPane.setBorder(null);
+            add(reportScrollPane);
+        } else {
+            reportTableModel.setRowCount(0);
+            reportTableModel.setColumnIdentifiers(columnNames);
+        }
+
+        reportScrollPane.setVisible(true);
+        reportScrollPane.revalidate();
+        reportScrollPane.repaint();
+        this.revalidate();
+        this.repaint();
+    }
+
+    private void runKitchenEfficiencyQuery() {
+        Timestamp fromTimestamp;
+        Timestamp toTimestamp;
+
+        try {
+            LocalDate fromDate = LocalDate.parse(fromDateField.getText().trim());
+            LocalDate toDate = LocalDate.parse(toDateField.getText().trim());
+
+            fromTimestamp = Timestamp.valueOf(fromDate.atStartOfDay());
+            toTimestamp = Timestamp.valueOf(toDate.atTime(23, 59, 59));
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please enter valid dates in format yyyy-MM-dd.",
+                    "Invalid Date",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        String sql = """
+                SELECT
+                    DATE(created_time) AS order_date,
+                    COUNT(kitchen_order_id) AS total_orders,
+                    AVG(TIMESTAMPDIFF(MINUTE, created_time, completed_time)) AS avg_prep_time_minutes
+                FROM pos_kitchen_orders
+                WHERE status = 'Ready' AND completed_time IS NOT NULL AND created_time BETWEEN ? AND ?
+                GROUP BY order_date
+                ORDER BY order_date;
+                """;
+
+        try (Connection connection = Database.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql);
+             Statement useStmt = connection.createStatement()) {
+
+            useStmt.execute("USE " + App.schemaName);
+
+            stmt.setTimestamp(1, fromTimestamp);
+            stmt.setTimestamp(2, toTimestamp);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                reportTableModel.setRowCount(0);
+
+                while (rs.next()) {
+                    Object orderDate = rs.getDate("order_date");
+                    int totalOrders = rs.getInt("total_orders");
+                    double avgPrepMinutes = rs.getDouble("avg_prep_time_minutes");
+
+                    reportTableModel.addRow(new Object[]{ orderDate, totalOrders, avgPrepMinutes });
+                }
+
+                if (reportTableModel.getRowCount() == 0) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "No ready kitchen orders found for the selected date range.",
+                            "No Data",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error running Kitchen Efficiency report:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private void styleReportTable() {
+        if (reportTable == null) return;
+
+        Theme theme = Theme.MONOCHROME;
+
+        reportTable.setBackground(theme.getBackgroundColor());
+        reportTable.setForeground(theme.getLabelFontColor());
+        reportTable.setFont(theme.getFontStyle());
+        reportTable.setGridColor(new java.awt.Color(60, 60, 60));
+        reportTable.setRowHeight(28);
+        reportTable.setShowVerticalLines(false);
+        reportTable.setShowHorizontalLines(true);
+        reportTable.setSelectionBackground(theme.getButtonBackground());
+        reportTable.setSelectionForeground(theme.getButtonFontColor());
+        reportTable.setFillsViewportHeight(true);
+
+        JTableHeader header = reportTable.getTableHeader();
+        header.setBackground(theme.getButtonBackground());
+        header.setForeground(theme.getButtonFontColor());
+        header.setFont(theme.getFontStyle());
+        header.setReorderingAllowed(false);
+        header.setOpaque(true);
     }
 }
