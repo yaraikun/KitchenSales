@@ -3,22 +3,62 @@ import java.awt.*;
 import java.sql.*;
 
 public class CashierPanel extends BackgroundPanel {
-    private boolean checkLogin(String username, String password) {
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
-
-        try (Connection connection = Database.getConnection();
-             Statement stmt1 = connection.createStatement();
-             PreparedStatement stmt2 = connection.prepareStatement(query)) {
-            stmt1.execute("USE " + App.schemaName);
-
-            return true;
-        } catch (SQLException f) {
-            throw new RuntimeException(f);
-        }
-
+    private void openPaymentPanel(Theme theme) {
+        /*
+        PaymentPanel paymentPanel = new PaymentPanel(theme);
+        PanelManager.updateCurrentPanel(paymentPanel);
+        */
     }
 
-    public CashierPanel() {
+    private void sendToKitchen() {
+        JOptionPane.showMessageDialog(null,
+                "Order sent to kitchen!",
+                "Kitchen",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void voidOrder() {
+        int confirm = JOptionPane.showConfirmDialog(
+                null,
+                "Are you sure you want to void/delete this order?",
+                "Confirm Void/Delete",
+                JOptionPane.YES_NO_OPTION
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            JOptionPane.showMessageDialog(null,
+                    "Order has been voided.");
+        }
+    }
+
+    private void applyDiscount() {
+        String[] discountOptions = {
+                "PWD",
+                "Senior Citizen",
+                "Employee Discount",
+                "Promo Discount",
+                "Manager Override",
+                "Staff Meal",
+                "Holiday Promo",
+                "No Discount"
+        };
+
+        String selected = (String) JOptionPane.showInputDialog(
+                null,
+                "Select Discount to Apply:",
+                "Apply Discount",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                discountOptions,
+                discountOptions[0]
+        );
+
+        if (selected != null) {
+            JOptionPane.showMessageDialog(null,
+                    "Applied discount: " + selected);
+        }
+    }
+
+    public CashierPanel(Theme theme) {
         super("CCINFOM-DB-APP/assets/cashierPanel.png");
         setLayout(null);
 
@@ -41,10 +81,9 @@ public class CashierPanel extends BackgroundPanel {
             add(btn);
         }
 
-
-//        loginButton.addActionListener(e -> {
-//
-//        });
-
+        kitchenButton.addActionListener(_ -> sendToKitchen());
+        discountButton.addActionListener(_ -> applyDiscount());
+        voidButton.addActionListener(_ -> voidOrder());
+        payButton.addActionListener(_ -> openPaymentPanel(theme));
     }
 }

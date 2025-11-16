@@ -50,7 +50,7 @@ public class LoginPanel extends BackgroundPanel {
             if (type != null) {
                 switch (type) {
                     case "CAS":
-                        CashierPanel cashierPanel = new CashierPanel();
+                        CashierPanel cashierPanel = new CashierPanel(theme);
                         PanelManager.updateCurrentPanel(cashierPanel);
                         break;
                     case "MAN":
