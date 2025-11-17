@@ -15,9 +15,6 @@ import java.text.DecimalFormat;
  * amount given by the customer and calculates the change. It also supports
  * different payment methods like Cash, Card, and E-Wallet. After a successful
  * payment, it updates the transaction status in the database.
- *
- * @author Riley
- * @version 1.0
  */
 public class PaymentPanel extends BackgroundPanel {
 
