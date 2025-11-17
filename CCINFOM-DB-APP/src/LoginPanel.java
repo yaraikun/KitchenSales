@@ -4,7 +4,9 @@ import java.awt.event.*;
 import java.sql.*;
 
 public class LoginPanel extends BackgroundPanel {
+
     private String checkLogin(String username, String password) {
+        // [OLD CONFLICTED CODE - IGNORED BY TEMP BUTTON]
         String query = "SELECT * FROM users WHERE username = ? AND password = ?";
 
         try (Connection connection = Database.getConnection();
@@ -27,7 +29,6 @@ public class LoginPanel extends BackgroundPanel {
         } catch (SQLException f) {
             throw new RuntimeException(f);
         }
-
     }
 
     public LoginPanel(Theme theme) {
@@ -42,6 +43,7 @@ public class LoginPanel extends BackgroundPanel {
         add(usernameField);
         add(passwordField);
 
+        // --- MAIN LOGIN BUTTON (For normal flow) ---
         JButton loginButton = theme.createButton();
         loginButton.addActionListener(e -> {
             String type = checkLogin(usernameField.getText(), passwordField.getText());
@@ -65,10 +67,32 @@ public class LoginPanel extends BackgroundPanel {
                 System.out.println("Oops");
             }
         });
-        loginButton.setBounds(779, 420, 270, 70);   
+        loginButton.setBounds(779, 420, 270, 70);
         loginButton.setOpaque(false);
         loginButton.setContentAreaFilled(false);
         loginButton.setBorderPainted(false);
         add(loginButton);
+
+        // --- [TEMP BUTTON] SHORTCUT TO NEW KITCHEN PANEL ---
+        JButton tempKitchenButton = theme.createButton();
+        tempKitchenButton.setText("TEMP: OPEN KDS (CARD VIEW)");
+
+        // Style it to be visible so you can find it easily
+        tempKitchenButton.setForeground(theme.getButtonFontColor());
+        tempKitchenButton.setFont(new Font("Arial", Font.BOLD, 14));
+        tempKitchenButton.setBackground(new Color(200, 0, 0)); // Red button to stand out
+        tempKitchenButton.setOpaque(true);
+
+        // Placed on the bottom-left of the screen
+        tempKitchenButton.setBounds(50, 500, 300, 50);
+
+        tempKitchenButton.addActionListener(e -> {
+            System.out.println("Temp button clicked. Opening Card-View KitchenPanel...");
+            // This simple line is all that is needed to open your new file
+            PanelManager.updateCurrentPanel(new KitchenPanel());
+        });
+
+        add(tempKitchenButton);
+        // --- END OF TEMP BUTTON ---
     }
 }
