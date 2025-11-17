@@ -16,7 +16,10 @@ public class PanelManager {
     }
 
     public static void updateCurrentPanel(JPanel newCurrentPanel) {
-
+        if (currentPanel instanceof KitchenPanel) {
+            ((KitchenPanel) currentPanel).stopRefreshTimer();
+            System.out.println("KitchenPanel timer stopped.");
+        }
 
         frame.remove(currentPanel);
         currentPanel = newCurrentPanel;

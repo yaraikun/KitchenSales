@@ -1,252 +1,357 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 
 public class KitchenPanel extends BackgroundPanel {
 
     // --- UI COMPONENTS ---
-    private JPanel pendingPanel;
-    private JPanel preparingPanel;
-    private JPanel readyPanel;
+    private JTable orderListTable;
+    private DefaultTableModel orderListModel;
+    private JTextArea orderDetailsArea;
+    private JLabel selectedOrderLabel;
+
+    // Control Buttons
+    private JButton btnPreparing;
+    private JButton btnReady;
+    private JButton btnServed;
 
     // --- LOGIC ---
     private javax.swing.Timer refreshTimer;
+    private int selectedKitchenId = -1;
+    private int selectedTransactionId = -1;
 
     // --- SQL QUERIES ---
-    private static final String FETCH_ACTIVE_ORDERS_QUERY =
-            "SELECT kitchen_order_id, transaction_id, status FROM pos_kitchen_orders " +
-                    "WHERE status IN ('Pending', 'Preparing', 'Ready') ORDER BY created_time ASC";
+    private static final String FETCH_ORDERS_QUERY =
+            "SELECT kitchen_order_id, transaction_id, status, created_time " +
+                    "FROM pos_kitchen_orders " +
+                    "WHERE status IN ('Pending', 'Preparing', 'Ready') " +
+                    "ORDER BY FIELD(status, 'Ready', 'Preparing', 'Pending'), created_time ASC";
+
+    private static final String FETCH_ITEMS_QUERY =
+            "SELECT item_name, quantity FROM pos_transaction_lines WHERE transaction_id = ?";
 
     private static final String UPDATE_STATUS_QUERY =
             "UPDATE pos_kitchen_orders SET status = ? WHERE kitchen_order_id = ?";
 
-    private static final String MARK_AS_READY_QUERY =
+    private static final String MARK_READY_QUERY =
             "UPDATE pos_kitchen_orders SET status = 'Ready', completed_time = NOW() WHERE kitchen_order_id = ?";
 
+
     public KitchenPanel() {
-        // Use the placeholder background
         super("CCINFOM-DB-APP/assets/paymentPanel.png");
         setLayout(new BorderLayout());
 
         Theme theme = Theme.MONOCHROME;
 
-        // Title Header
-        JLabel titleLabel = new JLabel("KITCHEN DISPLAY SYSTEM", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        titleLabel.setForeground(theme.getLabelFontColor()); // Use Theme color (White/Silver)
-        titleLabel.setBorder(new EmptyBorder(10,0,10,0));
-        add(titleLabel, BorderLayout.NORTH);
+        // --- HEADER PANEL (Updated for Back Button) ---
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
-        // Main Content Area (Split into 3 Columns)
-        JPanel mainContainer = new JPanel(new GridLayout(1, 3, 15, 0)); // 3 Cols, 15px gap
+        // 1. Back Button (Top Left)
+        JButton backButton = new JButton("<< BACK TO CASHIER");
+        backButton.setFont(new Font("Arial", Font.BOLD, 12));
+        backButton.setForeground(Color.WHITE);
+        backButton.setBackground(new Color(50, 50, 50));
+        backButton.setFocusPainted(false);
+        backButton.setBorder(new LineBorder(Color.GRAY, 1));
+        backButton.setPreferredSize(new Dimension(180, 30));
+        backButton.addActionListener(e -> {
+            // Go back to CashierPanel
+            PanelManager.updateCurrentPanel(new CashierPanel());
+        });
+
+        // 2. Title Label (Center)
+        JLabel titleLabel = new JLabel("KITCHEN ORDER MANAGEMENT", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(Color.WHITE);
+
+        // 3. Spacer (Right) to balance the layout
+        JLabel spacer = new JLabel();
+        spacer.setPreferredSize(new Dimension(180, 30));
+
+        headerPanel.add(backButton, BorderLayout.WEST);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        headerPanel.add(spacer, BorderLayout.EAST);
+
+        add(headerPanel, BorderLayout.NORTH);
+
+        // --- MAIN SPLIT PANE ---
+        JPanel mainContainer = new JPanel(new GridLayout(1, 2, 20, 0));
         mainContainer.setOpaque(false);
         mainContainer.setBorder(new EmptyBorder(10, 20, 20, 20));
 
-        // --- 1. PENDING COLUMN ---
-        pendingPanel = createColumn(mainContainer, "PENDING", Color.WHITE);
+        // 1. LEFT SIDE: Order List
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setOpaque(false);
 
-        // --- 2. PREPARING COLUMN ---
-        preparingPanel = createColumn(mainContainer, "PREPARING", Color.LIGHT_GRAY);
+        JLabel listHeader = theme.createLabel("INCOMING ORDERS");
+        listHeader.setHorizontalAlignment(SwingConstants.CENTER);
+        leftPanel.add(listHeader, BorderLayout.NORTH);
 
-        // --- 3. READY TO SERVE COLUMN ---
-        readyPanel = createColumn(mainContainer, "READY TO SERVE", Color.GRAY);
+        initOrderTable(theme);
+        JScrollPane tableScroll = new JScrollPane(orderListTable);
+        tableScroll.getViewport().setBackground(new Color(30, 30, 30));
+        leftPanel.add(tableScroll, BorderLayout.CENTER);
 
+        // 2. RIGHT SIDE: Details & Controls
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setOpaque(false);
+        rightPanel.setBorder(new LineBorder(Color.GRAY, 1));
+
+        // Right Header
+        selectedOrderLabel = theme.createLabel("SELECT AN ORDER");
+        selectedOrderLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        selectedOrderLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        selectedOrderLabel.setBorder(new EmptyBorder(10,0,10,0));
+        rightPanel.add(selectedOrderLabel, BorderLayout.NORTH);
+
+        // Item Details Area
+        orderDetailsArea = new JTextArea();
+        orderDetailsArea.setEditable(false);
+        orderDetailsArea.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        orderDetailsArea.setBackground(new Color(40, 40, 40));
+        orderDetailsArea.setForeground(Color.WHITE);
+        orderDetailsArea.setMargin(new Insets(10,10,10,10));
+        JScrollPane detailScroll = new JScrollPane(orderDetailsArea);
+        rightPanel.add(detailScroll, BorderLayout.CENTER);
+
+        // Control Buttons Panel
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 10, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        btnPreparing = createActionButton("START PREPARING", Color.ORANGE);
+        btnReady = createActionButton("MARK READY", Color.YELLOW);
+        btnServed = createActionButton("ORDER SERVED", Color.GREEN);
+
+        // Initially disable buttons
+        toggleButtons(null);
+
+        buttonPanel.add(btnPreparing);
+        buttonPanel.add(btnReady);
+        buttonPanel.add(btnServed);
+
+        rightPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add sides to container
+        mainContainer.add(leftPanel);
+        mainContainer.add(rightPanel);
         add(mainContainer, BorderLayout.CENTER);
 
-        // Start Logic
+        // --- LISTENERS ---
+        // Table Selection
+        orderListTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                loadSelectedOrderDetails();
+            }
+        });
+
+        // Button Actions
+        btnPreparing.addActionListener(e -> updateOrderStatus("Preparing"));
+        btnReady.addActionListener(e -> updateOrderStatus("Ready"));
+        btnServed.addActionListener(e -> updateOrderStatus("Served"));
+
+        // Start Refresh Timer
         initRefreshTimer();
-        fetchActiveOrders();
+        fetchOrders();
     }
 
-    /**
-     * Helper to build the UI for one column.
-     */
-    private JPanel createColumn(JPanel parent, String title, Color borderColor) {
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
+    private void initOrderTable(Theme theme) {
+        String[] cols = {"Kitchen ID", "Order #", "Time", "Status"};
+        orderListModel = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
 
-        // Header Label
-        JLabel header = new JLabel(title, SwingConstants.CENTER);
-        header.setFont(new Font("Arial", Font.BOLD, 22));
-        header.setForeground(borderColor); // Monotone text color
-        header.setBorder(new EmptyBorder(0,0,10,0));
-        wrapper.add(header, BorderLayout.NORTH);
+        orderListTable = new JTable(orderListModel);
+        orderListTable.setRowHeight(35);
+        orderListTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Inner Panel for Tickets
-        JPanel contentPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        contentPanel.setOpaque(false);
+        // Styling
+        orderListTable.setBackground(new Color(40, 40, 40));
+        orderListTable.setForeground(Color.WHITE);
+        orderListTable.setGridColor(Color.GRAY);
+        orderListTable.setFont(new Font("Arial", Font.PLAIN, 14));
+        orderListTable.setSelectionBackground(new Color(70, 70, 70));
+        orderListTable.setSelectionForeground(Color.WHITE);
 
-        // ScrollPane
-        JScrollPane scroll = new JScrollPane(contentPanel);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        // Border color matches the column theme (White/Gray)
-        scroll.setBorder(BorderFactory.createLineBorder(borderColor, 2));
-
-        wrapper.add(scroll, BorderLayout.CENTER);
-        parent.add(wrapper);
-
-        return contentPanel;
+        JTableHeader header = orderListTable.getTableHeader();
+        header.setBackground(theme.getButtonBackground());
+        header.setForeground(theme.getButtonFontColor());
+        header.setFont(new Font("Arial", Font.BOLD, 14));
     }
 
-    private void fetchActiveOrders() {
+    private JButton createActionButton(String text, Color highlight) {
+        JButton btn = new JButton("<html><center>" + text + "</center></html>");
+        btn.setFont(new Font("Arial", Font.BOLD, 12));
+        btn.setBackground(new Color(60, 60, 60));
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setPreferredSize(new Dimension(0, 50));
+
+        // Simple visual tweak: Add border matching the action color
+        btn.setBorder(new LineBorder(highlight, 2));
+        return btn;
+    }
+
+    // --- DATA FETCHING ---
+
+    private void fetchOrders() {
+        // Save selection to restore it after refresh
+        int savedRow = orderListTable.getSelectedRow();
+        int savedId = -1;
+        if (savedRow != -1) {
+            savedId = (int) orderListModel.getValueAt(savedRow, 0);
+        }
+
         try (Connection conn = Database.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(FETCH_ACTIVE_ORDERS_QUERY)) {
+             PreparedStatement stmt = conn.prepareStatement(FETCH_ORDERS_QUERY)) {
 
             stmt.execute("USE " + App.schemaName);
             ResultSet rs = stmt.executeQuery();
 
-            // Clear current lists
-            pendingPanel.removeAll();
-            preparingPanel.removeAll();
-            readyPanel.removeAll();
+            orderListModel.setRowCount(0);
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
 
             while (rs.next()) {
                 int kId = rs.getInt("kitchen_order_id");
                 int tId = rs.getInt("transaction_id");
                 String status = rs.getString("status");
+                Timestamp time = rs.getTimestamp("created_time");
 
-                // Create the ticket block (Status determines which column, but block style is uniform)
-                JPanel ticket = createOrderBlock(kId, tId);
+                orderListModel.addRow(new Object[]{kId, tId, sdf.format(time), status});
+            }
 
-                // Sort into the correct column
-                switch (status) {
-                    case "Pending":
-                        pendingPanel.add(ticket);
+            // Restore selection if it still exists
+            if (savedId != -1) {
+                for (int i = 0; i < orderListModel.getRowCount(); i++) {
+                    if ((int) orderListModel.getValueAt(i, 0) == savedId) {
+                        orderListTable.setRowSelectionInterval(i, i);
                         break;
-                    case "Preparing":
-                        preparingPanel.add(ticket);
-                        break;
-                    case "Ready":
-                        readyPanel.add(ticket);
-                        break;
+                    }
                 }
             }
 
-            // Refresh UI
-            pendingPanel.revalidate(); pendingPanel.repaint();
-            preparingPanel.revalidate(); preparingPanel.repaint();
-            readyPanel.revalidate(); readyPanel.repaint();
+        } catch (SQLException e) {
+            System.err.println("KDS List Error: " + e.getMessage());
+        }
+    }
+
+    private void loadSelectedOrderDetails() {
+        int row = orderListTable.getSelectedRow();
+        if (row == -1) {
+            selectedOrderLabel.setText("SELECT AN ORDER");
+            orderDetailsArea.setText("");
+            toggleButtons(null);
+            return;
+        }
+
+        selectedKitchenId = (int) orderListModel.getValueAt(row, 0);
+        selectedTransactionId = (int) orderListModel.getValueAt(row, 1);
+        String status = (String) orderListModel.getValueAt(row, 3);
+
+        selectedOrderLabel.setText("ORDER #" + selectedTransactionId + " (" + status + ")");
+        toggleButtons(status);
+
+        // Fetch Items for this order
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(FETCH_ITEMS_QUERY)) {
+
+            stmt.execute("USE " + App.schemaName);
+            stmt.setInt(1, selectedTransactionId);
+            ResultSet rs = stmt.executeQuery();
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("--------------------------------\n");
+            sb.append(" QTY   ITEM\n");
+            sb.append("--------------------------------\n");
+
+            while (rs.next()) {
+                String name = rs.getString("item_name");
+                int qty = rs.getInt("quantity");
+                sb.append(String.format(" %-5d %s\n", qty, name));
+            }
+            sb.append("--------------------------------\n");
+
+            orderDetailsArea.setText(sb.toString());
 
         } catch (SQLException e) {
-            System.err.println("KDS DB Error: " + e.getMessage());
+            orderDetailsArea.setText("Error loading items: " + e.getMessage());
         }
     }
 
-    /**
-     * Creates a Monotone Block for an order.
-     */
-    private JPanel createOrderBlock(int kitchenId, int transactionId) {
-        JPanel block = new JPanel(new BorderLayout());
-        block.setPreferredSize(new Dimension(100, 80)); // Square block size
-        block.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private void updateOrderStatus(String newStatus) {
+        if (selectedKitchenId == -1) return;
 
-        // Monotone Styling
-        Color bgColor = new Color(60, 60, 60); // Dark Gray Background
-        Color borderColor = new Color(200, 200, 200); // Light Gray/Silver Border
-
-        block.setBackground(bgColor);
-        block.setBorder(BorderFactory.createLineBorder(borderColor, 2));
-
-        // Order Number
-        JLabel numLabel = new JLabel("#" + transactionId, SwingConstants.CENTER);
-        numLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        numLabel.setForeground(Color.WHITE);
-        block.add(numLabel, BorderLayout.CENTER);
-
-        // Add Click Listener
-        block.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                // We need to check the column based on parent to know status,
-                // or we can just pass status.
-                // Since I removed status from args to make it monotone,
-                // let's re-fetch logic or simplify:
-                // Actually, the advanceStatus needs the current status.
-                // Let's fetch it fresh or pass it back in.
-
-                // Quick fix: Pass status into this method purely for logic, not color.
-                // But wait, the caller 'fetchActiveOrders' knows the status.
-                // Let's revert the method signature to accept status for LOGIC, even if we don't use it for COLOR.
-            }
-        });
-
-        return block;
-    }
-
-    // Overloading to keep logic clean
-    private JPanel createOrderBlock(int kitchenId, int transactionId, String status) {
-        JPanel block = createOrderBlock(kitchenId, transactionId);
-
-        // Add the listener here using the status
-        block.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                advanceStatus(kitchenId, status);
-            }
-        });
-        return block;
-    }
-
-
-    /**
-     * Moves the order to the next column in the flow.
-     */
-    private void advanceStatus(int kitchenId, String currentStatus) {
-        String query;
-        String nextStatus;
-        String message;
-
-        // Define the flow logic
-        if ("Pending".equals(currentStatus)) {
-            query = UPDATE_STATUS_QUERY;
-            nextStatus = "Preparing";
-            message = "Start Cooking Order #" + kitchenId + "?";
-        } else if ("Preparing".equals(currentStatus)) {
-            query = MARK_AS_READY_QUERY; // This sets the completed_time
-            nextStatus = "Ready";
-            message = "Mark Order #" + kitchenId + " as Ready to Serve?";
-        } else {
-            // If "Ready", moving it means it is SERVED/PICKED UP
-            query = UPDATE_STATUS_QUERY;
-            nextStatus = "Served"; // This will remove it from the screen
-            message = "Clear Order #" + kitchenId + " (Served)?";
-        }
-
-        // Confirmation Dialog
-        int choice = JOptionPane.showConfirmDialog(this,
-                message, "Update Order Status", JOptionPane.YES_NO_OPTION);
-
-        if (choice != JOptionPane.YES_OPTION) return;
+        String query = "Served".equals(newStatus) ? UPDATE_STATUS_QUERY :
+                ("Ready".equals(newStatus) ? MARK_READY_QUERY : UPDATE_STATUS_QUERY);
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
             stmt.execute("USE " + App.schemaName);
 
-            if ("Pending".equals(currentStatus) || "Ready".equals(currentStatus)) {
-                // Simple status update
-                stmt.setString(1, nextStatus);
-                stmt.setInt(2, kitchenId);
+            if ("Ready".equals(newStatus)) {
+                stmt.setInt(1, selectedKitchenId);
             } else {
-                // 'Mark as Ready' query only takes ID
-                stmt.setInt(1, kitchenId);
+                stmt.setString(1, newStatus);
+                stmt.setInt(2, selectedKitchenId);
             }
 
             stmt.executeUpdate();
-            fetchActiveOrders(); // Refresh immediately
+            fetchOrders(); // Refresh list
+
+            // If Served, clear selection
+            if ("Served".equals(newStatus)) {
+                orderListTable.clearSelection();
+                selectedOrderLabel.setText("SELECT AN ORDER");
+                orderDetailsArea.setText("");
+            } else {
+                // Else just reload details to update label
+                loadSelectedOrderDetails();
+            }
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Update Error: " + e.getMessage());
+        }
+    }
+
+    private void toggleButtons(String status) {
+        btnPreparing.setEnabled(false);
+        btnReady.setEnabled(false);
+        btnServed.setEnabled(false);
+
+        // Visual dimming
+        btnPreparing.setBackground(new Color(40, 40, 40));
+        btnReady.setBackground(new Color(40, 40, 40));
+        btnServed.setBackground(new Color(40, 40, 40));
+
+        if (status == null) return;
+
+        switch (status) {
+            case "Pending":
+                btnPreparing.setEnabled(true);
+                btnPreparing.setBackground(new Color(80, 60, 30)); // Dim Orange
+                break;
+            case "Preparing":
+                btnReady.setEnabled(true);
+                btnReady.setBackground(new Color(80, 80, 30)); // Dim Yellow
+                break;
+            case "Ready":
+                btnServed.setEnabled(true);
+                btnServed.setBackground(new Color(30, 80, 30)); // Dim Green
+                break;
         }
     }
 
     private void initRefreshTimer() {
-        refreshTimer = new javax.swing.Timer(5000, e -> fetchActiveOrders());
+        refreshTimer = new javax.swing.Timer(5000, e -> fetchOrders());
         refreshTimer.setInitialDelay(0);
         refreshTimer.start();
     }
