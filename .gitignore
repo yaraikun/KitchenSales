@@ -1,5 +1,6 @@
 # Compiled class files
 *.class
+CCINFOM-DB-APP/bin
 
 # IDE files (IntelliJ, Eclipse, VSCode)
 .idea/
@@ -15,3 +16,4 @@ build/
 
 # Mac 
 .DS_Store
+
