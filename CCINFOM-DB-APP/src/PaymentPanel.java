@@ -8,26 +8,78 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
 
+/**
+ * Manages the user interface for processing customer payments.
+ * <p>
+ * This panel displays the total transaction cost. It provides fields for the
+ * amount given by the customer and calculates the change. It also supports
+ * different payment methods like Cash, Card, and E-Wallet. After a successful
+ * payment, it updates the transaction status in the database.
+ *
+ * @author Riley
+ * @version 1.0
+ */
 public class PaymentPanel extends BackgroundPanel {
 
-    // Data passed from CashierPanel
+    /**
+     * The unique identifier for the current transaction.
+     */
     private final int transactionId;
+
+    /**
+     * The total cost of items in the current transaction.
+     */
     private final double totalCost;
 
-    // UI Components
+    /**
+     * Text field for entering the amount of money from the customer.
+     */
     private JTextField amountGivenField;
-    private JLabel totalCostValue;
-    private JLabel changeLabelValue;
-    private JButton confirmButton;
-    private JButton cancelButton;
-    private JButton cashButton, cardButton, ewalletButton;
 
-    // Logic
+    /**
+     * Displays the formatted total cost of the transaction.
+     */
+    private JLabel totalCostValue;
+
+    /**
+     * Displays the calculated change to be returned to the customer.
+     */
+    private JLabel changeLabelValue;
+
+    /**
+     * Button to finalize the payment and record the transaction.
+     */
+    private JButton confirmButton;
+
+    /**
+     * Button to cancel the payment process and return to the cashier panel.
+     */
+    private JButton cancelButton;
+
+    /**
+     * A dropdown menu to select the method of payment.
+     */
+    private JComboBox<String> paymentTypeBox;
+
+    /**
+     * The payment method currently selected, defaulting to "Cash".
+     */
     private String selectedPaymentMethod = "Cash";
 
-    // Formatting for currency
+    /**
+     * Formats numbers into a standard two-decimal currency format.
+     */
     private final DecimalFormat currencyFormat = new DecimalFormat("0.00");
 
+    /**
+     * Constructs a new PaymentPanel for a specific transaction.
+     * <p>
+     * This constructor sets up the panel with the transaction details and
+     * initializes all user interface components and their event listeners.
+     *
+     * @param transactionId The unique ID for the transaction.
+     * @param totalCost     The total cost for the transaction.
+     */
     public PaymentPanel(int transactionId, double totalCost) {
         super("CCINFOM-DB-APP/assets/paymentPanel.png");
         this.transactionId = transactionId;
@@ -36,9 +88,13 @@ public class PaymentPanel extends BackgroundPanel {
 
         initComponents();
         addEventListeners();
-        updatePaymentButtonStyles();
     }
 
+    /**
+     * Initializes and configures all user interface components.
+     * This method sets up the labels, text fields, buttons, and the dropdown
+     * menu with specific fonts, colors, and positions on the panel.
+     */
     private void initComponents() {
         Font labelFont = new Font("Arial", Font.BOLD, 36);
         Color fontColor = Color.WHITE;
@@ -70,16 +126,17 @@ public class PaymentPanel extends BackgroundPanel {
         amountGivenField.setHorizontalAlignment(SwingConstants.CENTER);
         add(amountGivenField);
 
-        // --- PAYMENT TYPE BUTTONS ---
-        cashButton = theme.createButton();
-        cardButton = theme.createButton();
-        ewalletButton = theme.createButton();
-        cashButton.setBounds(710, 77, 116, 78);
-        cardButton.setBounds(826, 77, 116, 78);
-        ewalletButton.setBounds(941, 77, 116, 78);
-        add(cashButton);
-        add(cardButton);
-        add(ewalletButton);
+        // --- PAYMENT TYPE DROPDOWN ---
+        String[] paymentOptions = {"Cash", "Card", "E-Wallet"};
+        paymentTypeBox = new JComboBox<>(paymentOptions);
+        paymentTypeBox.setBounds(710, 75, 346, 83);
+        paymentTypeBox.setFont(labelFont);
+        paymentTypeBox.setForeground(fontColor);
+        paymentTypeBox.setBackground(new Color(80, 80, 80));
+        paymentTypeBox.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        ((JLabel) paymentTypeBox.getRenderer()).setHorizontalAlignment(
+            SwingConstants.CENTER);
+        add(paymentTypeBox);
 
         // --- ACTION BUTTONS ---
         cancelButton = theme.createButton();
@@ -92,34 +149,39 @@ public class PaymentPanel extends BackgroundPanel {
         add(confirmButton);
     }
 
+    /**
+     * Registers event listeners for the interactive components.
+     * This method connects user actions, like typing or button clicks,
+     * to the corresponding logic for handling those events.
+     */
     private void addEventListeners() {
         amountGivenField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) {
-                calculateChange();
-            }
-
-            public void removeUpdate(DocumentEvent e) {
-                calculateChange();
-            }
-
-            public void changedUpdate(DocumentEvent e) {
-                calculateChange();
-            }
+            public void insertUpdate(DocumentEvent e) { calculateChange(); }
+            public void removeUpdate(DocumentEvent e) { calculateChange(); }
+            public void changedUpdate(DocumentEvent e) { calculateChange(); }
         });
 
-        cashButton.addActionListener(e -> selectPaymentMethod("Cash"));
-        cardButton.addActionListener(e -> selectPaymentMethod("Card"));
-        ewalletButton.addActionListener(e -> selectPaymentMethod("E-Wallet"));
+        paymentTypeBox.addActionListener(e -> {
+            String selectedMethod = (String) paymentTypeBox.getSelectedItem();
+            selectPaymentMethod(selectedMethod);
+        });
 
-        cancelButton.addActionListener(e -> PanelManager.updateCurrentPanel(new CashierPanel()));
+        cancelButton.addActionListener(
+            e -> PanelManager.updateCurrentPanel(new CashierPanel()));
         confirmButton.addActionListener(e -> processPayment());
     }
 
+    /**
+     * Updates the panel based on the selected payment method.
+     * If "Cash" is chosen, the amount field is enabled. For other methods,
+     * the field is disabled and auto-filled with the total cost.
+     *
+     * @param method The payment method selected from the dropdown.
+     */
     private void selectPaymentMethod(String method) {
         selectedPaymentMethod = method;
-        updatePaymentButtonStyles();
 
-        if (method.equals("Cash")) {
+        if ("Cash".equals(method)) {
             amountGivenField.setEnabled(true);
             amountGivenField.setText("0.00");
             amountGivenField.requestFocus();
@@ -130,18 +192,12 @@ public class PaymentPanel extends BackgroundPanel {
         calculateChange();
     }
 
-    private void updatePaymentButtonStyles() {
-        JButton[] buttons = { cashButton, cardButton, ewalletButton };
-        for (JButton btn : buttons) {
-            btn.setContentAreaFilled(false);
-            btn.setBorderPainted(false);
-
-            if (btn.getText().equals(selectedPaymentMethod)) {
-                btn.setBorder(BorderFactory.createLineBorder(Color.CYAN, 3));
-            }
-        }
-    }
-
+    /**
+     * Calculates the change due based on the amount given.
+     * It reads the value from the amount-given field and subtracts the total
+     * cost. The result is displayed. It also validates the input to check
+     * for valid numbers and sufficient payment.
+     */
     private void calculateChange() {
         try {
             double amountGiven = Double.parseDouble(amountGivenField.getText());
@@ -159,12 +215,21 @@ public class PaymentPanel extends BackgroundPanel {
         }
     }
 
+    /**
+     * Processes the final payment by updating the database.
+     * It inserts a new record into the payments table. It then updates the
+     * transaction's status to 'Completed'. All database operations are
+     * performed within a single transaction to maintain data integrity.
+     */
     private void processPayment() {
         double amountGiven;
         try {
             amountGiven = Double.parseDouble(amountGivenField.getText());
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid amount entered.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                "Invalid amount entered.",
+                "Input Error",
+                JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -174,30 +239,52 @@ public class PaymentPanel extends BackgroundPanel {
         try (Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
             try (Statement useStmt = connection.createStatement();
-                    PreparedStatement insertStmt = connection.prepareStatement(insertPaymentSQL);
-                    PreparedStatement updateStmt = connection.prepareStatement(updateTransactionSQL)) {
+                 PreparedStatement insertStmt =
+                     connection.prepareStatement(insertPaymentSQL);
+                 PreparedStatement updateStmt =
+                     connection.prepareStatement(updateTransactionSQL)) {
                 useStmt.execute("USE " + App.schemaName);
-
                 insertStmt.setInt(1, this.transactionId);
                 insertStmt.setString(2, selectedPaymentMethod);
                 insertStmt.setDouble(3, amountGiven);
                 insertStmt.executeUpdate();
-
                 updateStmt.setInt(1, this.transactionId);
                 updateStmt.executeUpdate();
-
                 connection.commit();
-                JOptionPane.showMessageDialog(this, "Payment successful! Change is " + changeLabelValue.getText(),
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                    "Payment successful! Change is " + changeLabelValue.getText(),
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
                 PanelManager.updateCurrentPanel(new CashierPanel());
             } catch (SQLException e) {
                 connection.rollback();
-                JOptionPane.showMessageDialog(this, "Database error during payment processing:\n" + e.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                    "Database error during payment processing:\n" + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
             }
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Failed to connect to the database:\n" + e.getMessage(),
-                    "Connection Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                "Failed to connect to the database:\n" + e.getMessage(),
+                "Connection Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    // =========================================================================
+    // ===== MAIN METHOD FOR FINAL VISUAL CHECK ================================
+    // =========================================================================
+    // public static void main(String[] args) {
+    //     JFrame testFrame = new JFrame("Payment Panel Final Visual Test");
+    //     testFrame.setSize(1200, 675);
+    //     testFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    //     testFrame.setLocationRelativeTo(null);
+    //     testFrame.setResizable(false);
+    //     testFrame.setLayout(new BorderLayout());
+    //
+    //     PaymentPanel testPanel = new PaymentPanel(999, 1250.50);
+    //
+    //     testFrame.add(testPanel, BorderLayout.CENTER);
+    //     testFrame.setVisible(true);
+    // }
 }
