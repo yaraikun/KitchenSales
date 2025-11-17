@@ -73,26 +73,5 @@ public class LoginPanel extends BackgroundPanel {
         loginButton.setBorderPainted(false);
         add(loginButton);
 
-        // --- [TEMP BUTTON] SHORTCUT TO NEW KITCHEN PANEL ---
-        JButton tempKitchenButton = theme.createButton();
-        tempKitchenButton.setText("TEMP: OPEN KDS (CARD VIEW)");
-
-        // Style it to be visible so you can find it easily
-        tempKitchenButton.setForeground(theme.getButtonFontColor());
-        tempKitchenButton.setFont(new Font("Arial", Font.BOLD, 14));
-        tempKitchenButton.setBackground(new Color(200, 0, 0)); // Red button to stand out
-        tempKitchenButton.setOpaque(true);
-
-        // Placed on the bottom-left of the screen
-        tempKitchenButton.setBounds(50, 500, 300, 50);
-
-        tempKitchenButton.addActionListener(e -> {
-            System.out.println("Temp button clicked. Opening Card-View KitchenPanel...");
-            // This simple line is all that is needed to open your new file
-            PanelManager.updateCurrentPanel(new KitchenPanel());
-        });
-
-        add(tempKitchenButton);
-        // --- END OF TEMP BUTTON ---
     }
 }
