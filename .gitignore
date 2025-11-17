@@ -1,6 +1,7 @@
 # Compiled class files
 *.class
 CCINFOM-DB-APP/bin
+CCINFOM-DB-APP/out
 
 # IDE files (IntelliJ, Eclipse, VSCode)
 .idea/
