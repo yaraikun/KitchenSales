@@ -35,16 +35,14 @@ public class ReportsPanel extends BackgroundPanel {
         super("CCINFOM-DB-APP/assets/reportsPanel.png");
         setLayout(null);
 
-        Theme theme = Theme.MONOCHROME;
-
-        initHeader(theme, managerUsername);
-        initReportButtons(theme);
-        initSharedDateControls(theme);
+        initHeader(managerUsername);
+        initReportButtons();
+        initSharedDateControls();
 
         System.out.println("ReportsPanel initialized with report buttons.");
     }
 
-    private void initHeader(Theme theme, String managerUsername) {
+    private void initHeader(String managerUsername) {
         JLabel managerLabel = new JLabel( managerUsername);
         managerLabel.setBounds(160, 4, 350, 30);
         managerLabel.setForeground(Color.BLACK);
@@ -53,21 +51,21 @@ public class ReportsPanel extends BackgroundPanel {
 
 
 
-        JButton logoutButton = theme.createButton();
+        JButton logoutButton = Theme.createButton();
         logoutButton.setBounds(100, 565, 140, 42);
         logoutButton.addActionListener(_ -> {
-            LoginPanel loginPanel = new LoginPanel(theme);
+            LoginPanel loginPanel = new LoginPanel();
             PanelManager.updateCurrentPanel(loginPanel);
         });
         add(logoutButton);
     }
 
-    private void initReportButtons(Theme theme) {
-        JButton salesSummaryButton = theme.createButton();
-        JButton salesPerformanceButton = theme.createButton();
-        JButton discountUtilizationButton = theme.createButton();
-        JButton paymentMethodButton = theme.createButton();
-        JButton kitchenEfficiencyButton = theme.createButton();
+    private void initReportButtons() {
+        JButton salesSummaryButton = Theme.createButton();
+        JButton salesPerformanceButton = Theme.createButton();
+        JButton discountUtilizationButton = Theme.createButton();
+        JButton paymentMethodButton = Theme.createButton();
+        JButton kitchenEfficiencyButton = Theme.createButton();
 
         JButton[] reportButtons = {
                 salesSummaryButton,
@@ -129,25 +127,25 @@ public class ReportsPanel extends BackgroundPanel {
         });
     }
 
-    private void initSharedDateControls(Theme theme) {
+    private void initSharedDateControls() {
         int filterY = 55;
         int filterHeight = 30;
 
-        fromDateField = theme.createTextField();
+        fromDateField = Theme.createTextField();
         fromDateField.setBounds(570, filterY + 2, 90, filterHeight);
         fromDateField.setOpaque(true);
-        fromDateField.setBackground(theme.getButtonBackground());
-        fromDateField.setBorder(BorderFactory.createLineBorder(theme.getLabelBackground(), 2));
+        fromDateField.setBackground(Color.BLACK);
+        fromDateField.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
         add(fromDateField);
 
-        toDateField = theme.createTextField();
+        toDateField = Theme.createTextField();
         toDateField.setBounds(915, filterY + 2, 90, filterHeight);
         toDateField.setOpaque(true);
-        toDateField.setBackground(theme.getButtonBackground());
-        toDateField.setBorder(BorderFactory.createLineBorder(theme.getLabelBackground(), 2));
+        toDateField.setBackground(Color.BLACK);
+        toDateField.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
         add(toDateField);
 
-        runReportButton = theme.createButton();
+        runReportButton = Theme.createButton();
         runReportButton.setBounds(1055, filterY, 85, filterHeight);
         add(runReportButton);
 
@@ -673,24 +671,21 @@ public class ReportsPanel extends BackgroundPanel {
 
     private void styleReportTable() {
         if (reportTable == null) return;
-
-        Theme theme = Theme.MONOCHROME;
-
-        reportTable.setBackground(theme.getBackgroundColor());
-        reportTable.setForeground(theme.getLabelFontColor());
-        reportTable.setFont(theme.getFontStyle());
+        reportTable.setBackground(Color.BLACK);
+        reportTable.setForeground(Color.WHITE);
+        reportTable.setFont(Theme.fontStyle);
         reportTable.setGridColor(new java.awt.Color(60, 60, 60));
         reportTable.setRowHeight(28);
         reportTable.setShowVerticalLines(false);
         reportTable.setShowHorizontalLines(true);
-        reportTable.setSelectionBackground(theme.getButtonBackground());
-        reportTable.setSelectionForeground(theme.getButtonFontColor());
+        reportTable.setSelectionBackground(Color.BLACK);
+        reportTable.setSelectionForeground(Color.WHITE);
         reportTable.setFillsViewportHeight(true);
 
         JTableHeader header = reportTable.getTableHeader();
-        header.setBackground(theme.getButtonBackground());
-        header.setForeground(theme.getButtonFontColor());
-        header.setFont(theme.getFontStyle());
+        header.setBackground(Color.BLACK);
+        header.setForeground(Color.WHITE);
+        header.setFont(Theme.fontStyle);
         header.setReorderingAllowed(false);
         header.setOpaque(true);
     }

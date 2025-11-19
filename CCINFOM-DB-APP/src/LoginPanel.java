@@ -4,9 +4,7 @@ import java.awt.event.*;
 import java.sql.*;
 
 public class LoginPanel extends BackgroundPanel {
-
     private String checkLogin(String username, String password) {
-        // [OLD CONFLICTED CODE - IGNORED BY TEMP BUTTON]
         String query = "SELECT * FROM users WHERE username = ? AND password = ?";
 
         try (Connection connection = Database.getConnection();
@@ -29,28 +27,27 @@ public class LoginPanel extends BackgroundPanel {
         } catch (SQLException f) {
             throw new RuntimeException(f);
         }
+
     }
 
-    public LoginPanel(Theme theme) {
+    public LoginPanel() {
         super("CCINFOM-DB-APP/assets/loginPanel.png");
         setLayout(null);
-        setBackground(theme.getBackgroundColor());
 
-        JTextField usernameField = theme.createTextField();
-        JTextField passwordField = theme.createTextField();
+        JTextField usernameField = Theme.createTextField();
+        JTextField passwordField = Theme.createTextField();
         usernameField.setBounds(805, 245, 265,46);
         passwordField.setBounds(805, 325, 265,46);
         add(usernameField);
         add(passwordField);
 
-        // --- MAIN LOGIN BUTTON (For normal flow) ---
-        JButton loginButton = theme.createButton();
+        JButton loginButton = Theme.createButton();
         loginButton.addActionListener(e -> {
             String type = checkLogin(usernameField.getText(), passwordField.getText());
             if (type != null) {
                 switch (type) {
                     case "CAS":
-                        CashierPanel cashierPanel = new CashierPanel(theme);
+                        CashierPanel cashierPanel = new CashierPanel();
                         PanelManager.updateCurrentPanel(cashierPanel);
                         break;
                     case "MAN":
@@ -58,7 +55,7 @@ public class LoginPanel extends BackgroundPanel {
                         PanelManager.updateCurrentPanel(reportsPanel);
                         break;
                     case "ADM":
-                        AdminPanel adminPanel = new AdminPanel(theme);
+                        AdminPanel adminPanel = new AdminPanel();
                         PanelManager.updateCurrentPanel(adminPanel);
                         break;
                 }
@@ -67,11 +64,10 @@ public class LoginPanel extends BackgroundPanel {
                 System.out.println("Oops");
             }
         });
-        loginButton.setBounds(779, 420, 270, 70);
+        loginButton.setBounds(779, 420, 270, 70);   
         loginButton.setOpaque(false);
         loginButton.setContentAreaFilled(false);
         loginButton.setBorderPainted(false);
         add(loginButton);
-
     }
 }

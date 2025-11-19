@@ -70,17 +70,17 @@ public class AdminPanel extends BackgroundPanel {
 
     }
 
-    private void backToLogin(Theme theme) {
-        LoginPanel loginPanel = new LoginPanel(theme);
+    private void backToLogin() {
+        LoginPanel loginPanel = new LoginPanel();
         PanelManager.updateCurrentPanel(loginPanel);
     }
 
-    public AdminPanel(Theme theme) {
+    public AdminPanel() {
         super("CCINFOM-DB-APP/assets/adminPanel.png");
         setLayout(null);
 
-        JTextField usernameField = theme.createTextField();
-        JTextField passwordField = theme.createTextField();
+        JTextField usernameField = Theme.createTextField();
+        JTextField passwordField = Theme.createTextField();
         usernameField.setBounds(475, 239, 270,46);
         passwordField.setBounds(475, 319, 270,46);
         add(usernameField);
@@ -91,18 +91,18 @@ public class AdminPanel extends BackgroundPanel {
         ((JLabel) typeDropDownBox.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
         add(typeDropDownBox);
 
-        JButton registerButton = theme.createButton();
+        JButton registerButton = Theme.createButton();
         registerButton.addActionListener(_ -> registerUser(usernameField.getText(), passwordField.getText(), (String) typeDropDownBox.getSelectedItem()));
         registerButton.setBounds(180, 430, 364, 85);
         add(registerButton);
 
-        JButton removeButton = theme.createButton();
+        JButton removeButton = Theme.createButton();
         removeButton.addActionListener(_ -> removeUser(usernameField.getText(), passwordField.getText(), (String) typeDropDownBox.getSelectedItem()));
         removeButton.setBounds(640, 430, 364, 85);
         add(removeButton);
 
-        JButton backButton = theme.createButton();
-        backButton.addActionListener(_ -> backToLogin(theme));
+        JButton backButton = Theme.createButton();
+        backButton.addActionListener(_ -> backToLogin());
         backButton.setBounds(360, 538, 462, 70);
         add(backButton);
 

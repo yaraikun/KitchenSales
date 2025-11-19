@@ -8,24 +8,17 @@ import java.sql.*;
 import java.text.SimpleDateFormat;
 
 public class KitchenPanel extends BackgroundPanel {
-
-    // --- UI COMPONENTS ---
     private JTable orderListTable;
     private DefaultTableModel orderListModel;
-    private JTextArea orderDetailsArea;
-    private JLabel selectedOrderLabel;
-
-    // Control Buttons
-    private JButton btnPreparing;
-    private JButton btnReady;
-    private JButton btnServed;
-
-    // --- LOGIC ---
+    private final JTextArea orderDetailsArea;
+    private final JLabel selectedOrderLabel;
+    private final JButton btnPreparing;
+    private final JButton btnReady;
+    private final JButton btnServed;
     private javax.swing.Timer refreshTimer;
     private int selectedKitchenId = -1;
     private int selectedTransactionId = -1;
 
-    // --- SQL QUERIES ---
     private static final String FETCH_ORDERS_QUERY =
             "SELECT kitchen_order_id, transaction_id, status, created_time " +
                     "FROM pos_kitchen_orders " +
@@ -46,8 +39,6 @@ public class KitchenPanel extends BackgroundPanel {
         super("CCINFOM-DB-APP/assets/paymentPanel.png");
         setLayout(new BorderLayout());
 
-        Theme theme = Theme.MONOCHROME;
-
         // --- HEADER PANEL (Updated for Back Button) ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
@@ -62,7 +53,6 @@ public class KitchenPanel extends BackgroundPanel {
         backButton.setBorder(new LineBorder(Color.GRAY, 1));
         backButton.setPreferredSize(new Dimension(180, 30));
         backButton.addActionListener(e -> {
-            // Go back to CashierPanel
             PanelManager.updateCurrentPanel(new CashierPanel());
         });
 
@@ -90,11 +80,11 @@ public class KitchenPanel extends BackgroundPanel {
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.setOpaque(false);
 
-        JLabel listHeader = theme.createLabel("INCOMING ORDERS");
+        JLabel listHeader = Theme.createLabel("INCOMING ORDERS");
         listHeader.setHorizontalAlignment(SwingConstants.CENTER);
         leftPanel.add(listHeader, BorderLayout.NORTH);
 
-        initOrderTable(theme);
+        initOrderTable();
         JScrollPane tableScroll = new JScrollPane(orderListTable);
         tableScroll.getViewport().setBackground(new Color(30, 30, 30));
         leftPanel.add(tableScroll, BorderLayout.CENTER);
@@ -105,7 +95,7 @@ public class KitchenPanel extends BackgroundPanel {
         rightPanel.setBorder(new LineBorder(Color.GRAY, 1));
 
         // Right Header
-        selectedOrderLabel = theme.createLabel("SELECT AN ORDER");
+        selectedOrderLabel = Theme.createLabel("SELECT AN ORDER");
         selectedOrderLabel.setFont(new Font("Arial", Font.BOLD, 20));
         selectedOrderLabel.setHorizontalAlignment(SwingConstants.CENTER);
         selectedOrderLabel.setBorder(new EmptyBorder(10,0,10,0));
@@ -162,7 +152,7 @@ public class KitchenPanel extends BackgroundPanel {
         fetchOrders();
     }
 
-    private void initOrderTable(Theme theme) {
+    private void initOrderTable() {
         String[] cols = {"Kitchen ID", "Order #", "Time", "Status"};
         orderListModel = new DefaultTableModel(cols, 0) {
             @Override
@@ -182,8 +172,8 @@ public class KitchenPanel extends BackgroundPanel {
         orderListTable.setSelectionForeground(Color.WHITE);
 
         JTableHeader header = orderListTable.getTableHeader();
-        header.setBackground(theme.getButtonBackground());
-        header.setForeground(theme.getButtonFontColor());
+        header.setBackground(Color.BLACK);
+        header.setForeground(Color.WHITE);
         header.setFont(new Font("Arial", Font.BOLD, 14));
     }
 

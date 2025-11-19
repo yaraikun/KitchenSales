@@ -93,9 +93,8 @@ public class PaymentPanel extends BackgroundPanel {
      * menu with specific fonts, colors, and positions on the panel.
      */
     private void initComponents() {
-        Font labelFont = new Font("Arial", Font.BOLD, 36);
+        Font labelFont = Theme.fontStyle.deriveFont(32f);
         Color fontColor = Color.WHITE;
-        Theme theme = Theme.MONOCHROME;
 
         // --- LABELS ---
         totalCostValue = new JLabel(currencyFormat.format(totalCost));
@@ -136,11 +135,11 @@ public class PaymentPanel extends BackgroundPanel {
         add(paymentTypeBox);
 
         // --- ACTION BUTTONS ---
-        cancelButton = theme.createButton();
+        cancelButton = Theme.createButton();
         cancelButton.setBounds(142, 469, 416, 104);
         add(cancelButton);
 
-        confirmButton = theme.createButton();
+        confirmButton = Theme.createButton();
         confirmButton.setBounds(639, 469, 416, 104);
         confirmButton.setEnabled(false);
         add(confirmButton);
@@ -158,14 +157,14 @@ public class PaymentPanel extends BackgroundPanel {
             public void changedUpdate(DocumentEvent e) { calculateChange(); }
         });
 
-        paymentTypeBox.addActionListener(e -> {
+        paymentTypeBox.addActionListener(_ -> {
             String selectedMethod = (String) paymentTypeBox.getSelectedItem();
             selectPaymentMethod(selectedMethod);
         });
 
         cancelButton.addActionListener(
-            e -> PanelManager.updateCurrentPanel(new CashierPanel()));
-        confirmButton.addActionListener(e -> processPayment());
+                _ -> PanelManager.updateCurrentPanel(new CashierPanel()));
+        confirmButton.addActionListener(_ -> processPayment());
     }
 
     /**
@@ -231,7 +230,7 @@ public class PaymentPanel extends BackgroundPanel {
         }
 
         String insertPaymentSQL = "INSERT INTO payments (transaction_id, payment_method, amount, payment_date) VALUES (?, ?, ?, NOW())";
-        String updateTransactionSQL = "UPDATE pos_transactions SET status = 'Completed', payment_status = 'Paid' WHERE transaction_id = ?";
+        String updateTransactionSQL = "UPDATE pos_transactions SET status_code = 'COMPLETED', payment_status = 'PAID' WHERE transaction_id = ?";
 
         try (Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
@@ -268,20 +267,4 @@ public class PaymentPanel extends BackgroundPanel {
         }
     }
 
-    // =========================================================================
-    // ===== MAIN METHOD FOR FINAL VISUAL CHECK ================================
-    // =========================================================================
-    // public static void main(String[] args) {
-    //     JFrame testFrame = new JFrame("Payment Panel Final Visual Test");
-    //     testFrame.setSize(1200, 675);
-    //     testFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    //     testFrame.setLocationRelativeTo(null);
-    //     testFrame.setResizable(false);
-    //     testFrame.setLayout(new BorderLayout());
-    //
-    //     PaymentPanel testPanel = new PaymentPanel(999, 1250.50);
-    //
-    //     testFrame.add(testPanel, BorderLayout.CENTER);
-    //     testFrame.setVisible(true);
-    // }
 }

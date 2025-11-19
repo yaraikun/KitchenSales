@@ -2,11 +2,10 @@ import javax.swing.*;
 
 public class PanelManager {
     private static JPanel currentPanel = null;
-    private static final Theme defaultTheme = Theme.MONOCHROME;
-    private static final JFrame frame = defaultTheme.createFrame();
+    private static final JFrame frame = Theme.createFrame();
 
     public static void initFrame() {
-        LoginPanel loginPanel = new LoginPanel(defaultTheme);
+        LoginPanel loginPanel = new LoginPanel();
         currentPanel = loginPanel;
         frame.add(loginPanel);
         frame.setResizable(false);
@@ -26,5 +25,9 @@ public class PanelManager {
         frame.add(currentPanel);
         frame.repaint();
         frame.revalidate();
+    }
+
+    public static JFrame getFrame() {
+        return frame;
     }
 }

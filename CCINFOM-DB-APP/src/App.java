@@ -41,6 +41,7 @@ public class App {
             throw new RuntimeException(f);
         }
 
+        Theme.loadFont("CCINFOM-DB-APP/assets/fonts/DMSans.ttf");
         PanelManager.initFrame();
     }
 }

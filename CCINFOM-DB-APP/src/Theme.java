@@ -1,68 +1,35 @@
 import java.awt.*;
+import java.io.File;
 import javax.swing.*;
 
-public enum Theme {
-    MONOCHROME(
-        new Color(34, 37, 38),          // frame background
-        new Color(224, 224, 224),       // label font color
-        new Color(224, 224, 224),       // button font color
-        new Font("JetBrains Mono", Font.PLAIN, 14), // font style
-        new Color(26, 26, 26),          // label background
-        new Color(53, 58, 62)        // button background
-    );
+public class Theme {
+    private static final Color labelFontColor = new Color(244, 244, 244);
+    public static Font fontStyle;
 
-    private final Color backgroundColor;
-    private final Color labelFontColor;
-    private final Color buttonFontColor;
-    private final Font fontStyle;
-    private final Color labelBackground;
-    private final Color buttonBackground;
+    public static void loadFont(String fontPath) {
+        try {
+            Font customFont = Font.createFont(Font.TRUETYPE_FONT, new File(fontPath)).deriveFont(16f);
 
-    public Color getBackgroundColor() {
-        return backgroundColor;
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(customFont);
+            fontStyle = customFont;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
-    public Color getLabelFontColor() {
-        return labelFontColor;
-    }
-
-    public Color getButtonFontColor() {
-        return buttonFontColor;
-    }
-
-    public Font getFontStyle() {
-        return fontStyle;
-    }
-
-    public Color getLabelBackground() {
-        return labelBackground;
-    }
-
-    public Color getButtonBackground() {
-        return buttonBackground;
-    }
-
-    Theme(Color background, Color labelFontColor, Color buttonFontColor,
-    Font fontStyle, Color labelBackground, Color buttonBackground) {
-        this.backgroundColor = background;
-        this.labelFontColor = labelFontColor;
-        this.buttonFontColor = buttonFontColor;
-        this.fontStyle = fontStyle;
-        this.labelBackground = labelBackground;
-        this.buttonBackground = buttonBackground;
-    }
-
-    public JFrame createFrame() {
+    public static JFrame createFrame() {
         JFrame frame = new JFrame("CCINFOM DB Application");
         frame.setSize(1200, 675);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().setBackground(backgroundColor);
         frame.setLayout(new BorderLayout());
         frame.setLocationRelativeTo(null);
         return frame;
     }
 
-    public JButton createButton() {
+    public static JButton createButton() {
         JButton button = new JButton();
         button.setOpaque(false);
         button.setContentAreaFilled(false);
@@ -71,7 +38,7 @@ public enum Theme {
         return button;
     }
 
-    public JLabel createLabel(String text) {
+    public static JLabel createLabel(String text) {
         JLabel label = new JLabel(text);
         label.setForeground(labelFontColor);
         label.setFont(fontStyle);
@@ -79,10 +46,10 @@ public enum Theme {
         return label;
     }
 
-    public JTextField createTextField() {
+    public static JTextField createTextField() {
         JTextField textField = new JTextField();
-        //textField.setOpaque(false);
-        //textField.setBorder(null);
+        textField.setOpaque(false);
+        textField.setBorder(null);
         textField.setForeground(labelFontColor);
         textField.setFont(fontStyle);
         textField.setCaretColor(labelFontColor);
